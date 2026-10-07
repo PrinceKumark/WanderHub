@@ -26,6 +26,16 @@ const userRouter = require("./routes/user.js");
 const dburl = process.env.ATLASDB_URL;
 const port = process.env.PORT || 8080;
 
+if (!dburl) {
+    console.error("FATAL: ATLASDB_URL environment variable is not set. See .env.example.");
+    process.exit(1);
+}
+
+if (!process.env.SECRET) {
+    console.error("FATAL: SECRET environment variable is not set. See .env.example.");
+    process.exit(1);
+}
+
 main()
     .then(()=>{
         console.log("connect to DB");
@@ -39,6 +49,9 @@ async function main(){
     await mongoose.connect(dburl);
     // await mongoose.connect(MONGO_URL);
 }
+
+// Trust the first proxy (required for secure cookies and correct req.protocol on Render/Railway/Heroku)
+app.set("trust proxy", 1);
 
 app.engine("ejs",ejsMate);
 app.set("view engine","ejs");
@@ -63,11 +76,11 @@ const sessionOption = {
     store,
     secret: process.env.SECRET,
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
     cookie: {
-       
         maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-        httpOnly: true, 
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
     },
 };
 
